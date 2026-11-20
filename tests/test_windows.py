@@ -16,7 +16,7 @@ def w(rel, data=b"x"):
     return p
 try:
     # path helpers
-    ok("norm_folder drive path", storage.norm_folder("c:\\Users\\corey\\") == "c:\\Users\\corey" and storage.norm_folder("C:\\") == "C:\\" and storage.norm_folder('"D:\\a\\..\\b"') == "D:\\b", storage.norm_folder("c:\\Users\\corey\\"))
+    ok("norm_folder drive path", storage.norm_folder("c:\\Users\\demo\\") == "c:\\Users\\demo" and storage.norm_folder("C:\\") == "C:\\" and storage.norm_folder('"D:\\a\\..\\b"') == "D:\\b", storage.norm_folder("c:\\Users\\demo\\"))
     for bad in ("relative\\x", "\\rooted", "C:rel", ""):
         try: storage.norm_folder(bad); ok("norm_folder rejects %r" % bad, False)
         except ValueError: ok("norm_folder rejects %r" % bad, True)

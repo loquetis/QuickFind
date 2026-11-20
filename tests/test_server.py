@@ -40,7 +40,7 @@ ok("path traversal blocked", req("/..%2f..%2fserver.py")[0] == 404 and req("/../
 ok("bad Host header rejected", req("/api/status", headers={"Host": "evil.example"})[0] == 403 and req("/", headers={"Host": "127.0.0.1:1"})[0] == 403)
 ok("localhost Host accepted", req("/api/status", headers={"Host": "localhost:%d" % PORT})[0] == 200)
 s, st = jget("/api/status")
-ok("status fields", s == 200 and st["version"] == "1.0.0" and st["index"]["entries"] >= 20 and st["index"]["fts"] is True and st["settings"]["speed"] == "gentle" and st["drives"][0]["root"] == E.root and st["drives"][0]["built"] is True, st)
+ok("status fields", s == 200 and st["version"] == "1.0.1" and st["index"]["entries"] >= 20 and st["index"]["fts"] is True and st["settings"]["speed"] == "gentle" and st["drives"][0]["root"] == E.root and st["drives"][0]["built"] is True, st)
 s, r = jget("/api/search?q=report&limit=10"); ok("search endpoint", s == 200 and {x["name"] for x in r["results"]} == {"Report Final.pdf", "report_draft.docx"} and "ms" in r)
 ok("search: type/ext/size/date/sort params", jget("/api/search?q=&type=images&sort=size&dir=desc")[1]["results"][0]["name"] == "IMG_0001.JPG" and jget("/api/search?ext=pdf&smin=1000")[1]["results"][0]["name"] == "Report Final.pdf")
 ok("search: bad params -> 400", jget("/api/search?type=zzz")[0] == 400 and jget("/api/search?sort=zzz")[0] == 400 and jget("/api/search?smin=abc")[0] == 400)
