@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="app-token" content="__APP_TOKEN__">
+  <title>QuickFind</title>
+  <link rel="icon" href="favicon.svg">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="app.css">
+  <script src="core.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand"><div class="name">QuickFind</div><p class="subtitle">File finder</p></div>
+      <nav aria-label="Sections"><ul class="nav-list">
+        <li><button type="button" class="nav-btn active" data-view="search">Search</button></li>
+        <li><button type="button" class="nav-btn" data-view="settings">Index &amp; settings</button></li>
+      </ul></nav>
+      <div class="side-status" id="side-status" role="status" aria-live="polite">
+        <div class="label">Index</div>
+        <div id="side-text" class="small muted">Starting…</div>
+        <div class="bar" id="side-bar" hidden><span id="side-bar-fill"></span></div>
+      </div>
+      <div class="settings-block">
+        <label for="theme">Theme</label>
+        <select id="theme"><option value="dark">Dark</option><option value="light">Light</option><option value="green">Green</option><option value="amber">Amber</option><option value="blue">Blue</option><option value="mono">Mono</option></select>
+      </div>
+    </aside>
+    <main id="main" tabindex="-1">
+      <header class="topbar"><h1 id="view-title">Search</h1><div id="status" class="status" role="status" aria-live="polite"></div></header>
+      <section id="view" class="view">
+
+        <div id="v-search" class="stack">
+          <div class="searchbar">
+            <input type="search" id="q" class="big" placeholder="Type to find files and folders…   * and ? are wildcards" aria-label="Search file and folder names" autocomplete="off" spellcheck="false" maxlength="500">
+          </div>
+          <div class="filters">
+            <label class="field"><span>Type</span>
+              <select id="f-type">
+                <option value="any">Everything</option><option value="files">Files</option><option value="folders">Folders</option>
+                <option value="documents">Documents</option><option value="images">Pictures</option><option value="video">Video</option>
+                <option value="audio">Audio</option><option value="archives">Archives</option><option value="code">Code</option><option value="apps">Programs</option>
+              </select></label>
+            <label class="field"><span>Extension</span><input type="text" id="f-ext" class="narrow-ext" placeholder="pdf, jpg" maxlength="100" autocomplete="off" spellcheck="false"></label>
+            <div class="field"><span>Size</span>
+              <div class="pair">
+                <input type="number" id="f-smin" class="narrow" min="0" step="any" placeholder="min" aria-label="Minimum size">
+                <select id="f-smin-u" aria-label="Minimum size unit"><option value="1">B</option><option value="1024">KB</option><option value="1048576" selected>MB</option><option value="1073741824">GB</option></select>
+                <span class="muted">to</span>
+                <input type="number" id="f-smax" class="narrow" min="0" step="any" placeholder="max" aria-label="Maximum size">
+                <select id="f-smax-u" aria-label="Maximum size unit"><option value="1">B</option><option value="1024">KB</option><option value="1048576" selected>MB</option><option value="1073741824">GB</option></select>
+              </div></div>
+            <label class="field"><span>Modified</span>
+              <select id="f-date"><option value="any">Any time</option><option value="today">Today</option><option value="7">Past 7 days</option><option value="30">Past 30 days</option><option value="365">Past year</option><option value="custom">Between dates…</option></select></label>
+            <div class="field" id="f-custom" hidden><span>Between</span>
+              <div class="pair"><input type="date" id="f-dfrom" aria-label="Modified after"><span class="muted">and</span><input type="date" id="f-dto" aria-label="Modified before"></div></div>
+            <label class="field"><span>Sort by</span>
+              <div class="pair"><select id="f-sort"><option value="name">Name</option><option value="size">Size</option><option value="date">Date modified</option><option value="path">Path</option></select>
+              <button type="button" id="f-dir" title="Reverse the order" aria-label="Sort direction: ascending">A→Z</button></div></label>
+            <button type="button" id="f-clear" class="small">Clear filters</button>
+          </div>
+          <div id="banner" class="notice" hidden></div>
+          <div class="table-wrap" id="table-wrap">
+            <table class="data" id="results" aria-label="Search results">
+              <thead><tr>
+                <th scope="col"><button type="button" class="th" data-sort="name">Name</button></th>
+                <th scope="col"><button type="button" class="th" data-sort="path">Folder</button></th>
+                <th scope="col" class="num"><button type="button" class="th" data-sort="size">Size</button></th>
+                <th scope="col"><button type="button" class="th" data-sort="date">Modified</button></th>
+              </tr></thead>
+              <tbody id="rows"></tbody>
+            </table>
+            <div id="empty" class="empty center"></div>
+          </div>
+          <div class="toolbar"><span id="count" class="muted small"></span><span class="spacer"></span><button type="button" id="btn-more" class="small" hidden>Show more</button></div>
+          <div class="panel actionbar" id="actions" hidden>
+            <div class="sel-path"><span class="label">Selected</span><div id="sel-path" class="path-text"></div></div>
+            <div class="toolbar">
+              <button type="button" id="a-open" class="primary">Open</button>
+              <button type="button" id="a-reveal">Show in folder</button>
+              <button type="button" id="a-copy">Copy path</button>
+            </div>
+          </div>
+          <p class="small muted hints">Enter opens · Ctrl+Enter shows in folder · Ctrl+Shift+C copies the path · ↑ ↓ pick a result · quotes keep spaces together · ! excludes a word · a folder\name term searches the whole path</p>
+        </div>
+
+        <div id="v-settings" class="stack" hidden>
+          <div class="panel" id="idx-panel">
+            <div class="panel-head"><h2>Index</h2><div class="toolbar">
+              <button type="button" id="btn-rescan">Rescan now</button>
+              <button type="button" id="btn-pause">Pause indexing</button>
+              <button type="button" id="btn-rebuild" class="danger">Delete index and rebuild</button></div></div>
+            <div id="idx-cards" class="cards"></div>
+            <div id="idx-detail" class="small muted"></div>
+          </div>
+          <div class="panel">
+            <h2>Drives to include</h2>
+            <p class="small muted">Fixed drives only. Turning a drive off removes it from the index; turning it on indexes it again.</p>
+            <div id="drive-list" class="checks"></div>
+          </div>
+          <div class="panel">
+            <h2>Folders to skip</h2>
+            <p class="small muted">Nothing inside these folders is indexed. Always skipped: <span id="builtin"></span>, symbolic links and junctions (not followed, so no loops).</p>
+            <ul id="ex-list" class="ex-list"></ul>
+            <div class="toolbar">
+              <input type="text" id="ex-add" class="wide grow" placeholder="C:\Users\you\SomeFolder" aria-label="Folder to skip" maxlength="1000" spellcheck="false">
+              <button type="button" id="ex-add-btn">Add</button>
+              <button type="button" id="ex-browse">Browse…</button>
+            </div>
+          </div>
+          <div class="panel">
+            <h2>Options</h2>
+            <label class="check"><input type="checkbox" id="o-system"> Skip Windows system files and folders</label>
+            <label class="check"><input type="checkbox" id="o-hidden"> Skip hidden files and folders</label>
+            <div class="row">
+              <label class="field"><span>Indexing speed</span>
+                <select id="o-speed"><option value="gentle">Gentle (lowest load, default)</option><option value="normal">Normal</option><option value="fast">Fast (more disk and CPU)</option></select></label>
+              <label class="field"><span>Rescan everything</span>
+                <select id="o-rescan"><option value="0">Never (only live changes)</option><option value="15">Every 15 minutes</option><option value="30">Every 30 minutes</option><option value="60">Every hour</option><option value="180">Every 3 hours</option><option value="720">Every 12 hours</option></select></label>
+            </div>
+            <p class="small muted">Indexing runs at low priority and only reads folder listings. It never opens file contents, so OneDrive online-only files are never downloaded.</p>
+          </div>
+          <div class="toolbar"><button type="button" id="btn-apply" class="primary" disabled>Apply changes</button><span id="apply-note" class="small muted"></span></div>
+        </div>
+
+      </section>
+    </main>
+  </div>
+  <div id="modal-root"></div>
+  <div id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
