@@ -1,0 +1,18 @@
+# QuickFind 1.0.0
+
+Finds files and folders on your PC by name, instantly as you type. Indexes every fixed drive in the background at low priority and keeps the index current.
+
+- **How it works:** a Python localhost-only server (127.0.0.1:8771, env `QUICKFIND_PORT`) plus a web UI in a private Edge app window (same pattern as PulseScope, DupeHunter, SpeedLog, DriveDoctor): random per-launch token on every change request, strict CSP, text-only DOM building, minimized-window early-exit fix.
+- **Index:** SQLite (WAL) in `%APPDATA%\QuickFind\index.db` (override with `QUICKFIND_DATA`). Folder paths are stored once per folder; names are also in an FTS5 trigram index, so any substring of 3+ characters is found in a few milliseconds even with millions of files (shorter terms use a plain scan, tens of ms per million items). Settings are in `settings.json` next to it.
+- **Search:** substring (case-insensitive), `*` and `?` wildcards (whole-name match, e.g. `*.pdf`, `report*`), several words = AND, `"quoted phrase"`, `!word` to exclude, a term with `\` or `/` matches against the whole path. Filters: type, extension list, size range, modified date (presets or between two dates). Sort by name, size, date or path, ascending or descending. Keyboard: arrows, Enter (open), Ctrl+Enter (show in folder), Ctrl+Shift+C (copy path).
+- **Actions:** Open, Show in folder (Explorer with the item selected), Copy path. The server opens items **by index id only**, never by a path from the page. Programs and scripts (.exe, .bat, .ps1, .lnk, ...) ask for confirmation; online-only OneDrive files ask before they would be downloaded.
+- **Keeping current:** one `ReadDirectoryChangesW` watcher per drive (recursive, no admin, no extra packages) marks changed folders; the indexer thread re-reads just those folders (or one file's size/date for plain modifications). A full re-check of every folder (a cheap diff, no writes unless something changed) runs at startup and every hour by default (15 min to 12 h, or never). A lost-events overflow triggers a re-check of that drive.
+- **Light by design:** all work on one low-priority thread (`THREAD_MODE_BACKGROUND_BEGIN`: low CPU and disk priority) plus below-normal process priority; after about 20 ms of work it sleeps 2x as long (Gentle, default; Normal 0.7x; Fast 0.15x), so about a third of one core while indexing. Database cache 20 MB per connection, rows streamed per folder, expect roughly 40-80 MB of RAM. Pause/Resume button in the settings view.
+- **Skipped by default:** files/folders with the Windows System attribute, `$Recycle.Bin`, `System Volume Information`, `$WinREAgent`, `C:\Windows\WinSxS`, QuickFind's own data folder, and symbolic links/junctions (listed by name, never followed, so no loops). OneDrive "Files On-Demand" folders are listed like any other, but only directory listings are read, never file contents, so online-only files are never downloaded.
+- **Settings:** drives to include, folders to skip (typed or picked with the Windows folder dialog), skip hidden files (off by default), indexing speed, rescan interval, rescan now, pause, delete index and rebuild.
+- **No admin:** folders that Windows will not let a normal user read are skipped and counted.
+- **Tests:** `python tests/test_engine.py` (index, diff, search, filters, settings, events, throttle, edge cases), `tests/test_server.py` (endpoints, security rules, launcher smoke test), `tests/uitest.py` (headless Chrome UI), `tests/test_should_exit.py`, and on Windows `tests/test_windows.py` (attributes, junctions, long paths, the real change watcher).
+- **Not code-signed.** Not published.
+
+## Bugs / edge cases caught in review
+See the handoff in `/workspace/team/handoffs/` for the list.
