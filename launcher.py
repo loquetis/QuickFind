@@ -1,7 +1,7 @@
 """QuickFind desktop entry point (packaged as QuickFind.exe with PyInstaller --noconsole).
 
 Same reviewed pattern as PulseScope 1.0.2 / LanScope 1.0.0: private Edge app-mode profile (no
-extensions, sync or sign-in), port busy = already running, stays up while its own window is open
+extensions, sync or sign-in), already running (port probe + named mutex) = open its window, stays up while its own window is open
 (minimized pages have throttled timers) and exits shortly after the window closes. Written by hand.
 """
 import logging
@@ -90,11 +90,40 @@ def should_exit(has_window, window_gone, idle):
     return idle > 180
 
 
+_mutex = None
+
+
+def already_running(port):
+    """Windows lets two processes listen on the same port (SO_REUSEADDR), so a failed bind cannot be relied on to detect a
+    running copy. Ask the port instead, and also hold a named mutex so two copies starting at the same moment cannot both win."""
+    import socket
+    try:
+        with socket.create_connection(("127.0.0.1", port), timeout=1.0):
+            return True
+    except OSError:
+        pass
+    global _mutex
+    if os.name == "nt":
+        try:
+            import ctypes
+            k = ctypes.WinDLL("kernel32", use_last_error=True)
+            k.CreateMutexW.restype = ctypes.c_void_p
+            k.CreateMutexW.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_wchar_p]
+            _mutex = k.CreateMutexW(None, False, "Local\\%s-single-instance-%d" % (APP, port))
+            if ctypes.get_last_error() == 183:           # ERROR_ALREADY_EXISTS
+                return True
+        except Exception:  # noqa: BLE001
+            log.exception("could not create the single-instance mutex")
+    return False
+
+
 def main():
     import server  # imported late so the port env var and logging are already set up
     url = f"http://{server.HOST}:{server.PORT}/"
     no_window = "--no-window" in ARGV
     try:
+        if already_running(server.PORT):
+            raise OSError("already running")
         httpd = server.build_server()
     except OSError:
         log.info("port %s busy: assuming %s is already running, opening its window", server.PORT, APP)

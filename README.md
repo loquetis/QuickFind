@@ -1,4 +1,4 @@
-# QuickFind 1.0.0
+# QuickFind 1.0.1
 
 Finds files and folders on your PC by name, instantly as you type. Indexes every fixed drive in the background at low priority and keeps the index current.
 
@@ -12,7 +12,5 @@ Finds files and folders on your PC by name, instantly as you type. Indexes every
 - **Settings:** drives to include, folders to skip (typed or picked with the Windows folder dialog), skip hidden files (off by default), indexing speed, rescan interval, rescan now, pause, delete index and rebuild.
 - **No admin:** folders that Windows will not let a normal user read are skipped and counted.
 - **Tests:** `python tests/test_engine.py` (index, diff, search, filters, settings, events, throttle, edge cases), `tests/test_server.py` (endpoints, security rules, launcher smoke test), `tests/uitest.py` (headless Chrome UI), `tests/test_should_exit.py`, and on Windows `tests/test_windows.py` (attributes, junctions, long paths, the real change watcher).
-- **Not code-signed.** Not published.
+- **Not code-signed.** SmartScreen may warn.
 
-## Bugs / edge cases caught in review
-See the handoff in `/workspace/team/handoffs/` for the list.
